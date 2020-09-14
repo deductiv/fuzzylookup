@@ -81,19 +81,19 @@ class fuzzylookup(StreamingCommand):
 	lookupfilter = Option(
 		doc='''
 		**Syntax:** **lookupfilter=***"LookupField1=\"local admin\" Lookupfield2=\"*@$email_domain$\""* (wildcard, variable, or literal string match)
-		**Description:** List filter to narrow down comparisons''',
+		**Description:** Filter for data in the specified lookup to narrow down comparisons''',
 		require=False) 
 
 	mask = Option(
 		doc='''
 		**Syntax:** **mask=***"regular expression"*
-		**Description:** Mask pattern for both compared sets of values. Masks the matched regex before comparing.''',
+		**Description:** Mask pattern for both compared sets of values. Masks the regex matched text before comparing.''',
 		require=False, validate=validators.RegularExpression())
 
 	delete = Option(
 		doc='''
 		**Syntax:** **delete=***"regular expression"*
-		**Description:** Deletion pattern for both compared sets of values. Removes the matched regex before comparing.''',
+		**Description:** Deletion pattern for both compared sets of values. Removes the regex matched text before comparing.''',
 		require=False, validate=validators.RegularExpression())
 
 	session_key = ''
