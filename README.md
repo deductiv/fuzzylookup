@@ -31,13 +31,13 @@ Cross-reference your search fields against lookup data for non-exact matches, wi
 	- Dynamic filters take data from each search result into account, and reference event field names.  
 	- The following example contains a static filter followed by a dynamic filter, which references the *email\_domain* field in each event:  
 ##
-			lookupfilter="LookupField1=\"local admin\" Lookupfield2=\"*@$email_domain$\""  
+	lookupfilter="LookupField1=\"local admin\" Lookupfield2=\"*@$email_domain$\""  
 - Data filtering is supported to limit the number of comparisons being made.  
 	- For example, a email address comparisons can be limited to those where the domains match:  
 - Text masking and deletion is supported via regex. This masks or deletes the event field data and the lookup data in memory, prior to any comparisons being made.  
 	- Data can be sanitized before comparison to treat certain character classes equally. The following example deletes the domain from an email address, deletes dot (.) and underscore (\_), and masks all numbers. 
 ##
-			delete="(@[^@]+$|\\.|_)" mask="[0-9]"
+	delete="(@[^@]+$|\\.|_)" mask="[0-9]"
 
 ### Arguments  
 - #### Prefix  
