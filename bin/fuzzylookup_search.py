@@ -23,6 +23,7 @@ import re
 import json
 import time
 import fnmatch
+import difflib
 from deductiv_helpers import *
 
 # Multithreading
@@ -53,6 +54,13 @@ def matching_chars(string1, string2):
 		if string1[i] == string2[i]:
 			count += 1
 	return count
+
+def overlap_length(string1, string2):
+	sm = difflib.SequenceMatcher(a=string1, b=string2)
+	try:
+		return sm.find_longest_match(0, len(string1), 0, len(string2) ).size
+	except BaseException as e:
+		return -1
 
 # Define class and type for Splunk command
 @Configuration(local=True)
@@ -106,7 +114,7 @@ class fuzzylookup(StreamingCommand):
 	lookup = ''
 	lookupfield = ''
 	searchfield = ''
-	output_fields = []
+	#output_fields = []
 	output_aliases = OrderedDict()
 	# Default output field overwrite setting is True
 	output_overwrite = True
@@ -147,15 +155,15 @@ class fuzzylookup(StreamingCommand):
 						self.searchfield = self.lookupfield
 						arg_index += 1
 						
-				if None not in [self.lookup, self.lookupfield, self.searchfield]:
+				if arg_index < len(args) and None not in [self.lookup, self.lookupfield, self.searchfield]:
 					if args[arg_index].upper() == 'OUTPUT':
 						self.output_overwrite = True
 					elif args[arg_index].upper() == 'OUTPUTNEW':
 						self.output_overwrite = False
 					else:
 						# Add field to output fields list
-						output_field_name = args[arg_index]
-						self.output_fields.append(output_field_name)
+						output_field_name = args[arg_index].strip(',')
+						#self.output_fields.append(output_field_name)
 						if len(args) >= arg_index + 2:
 							if args[arg_index + 1].upper() == 'AS':
 								self.output_aliases[output_field_name] = args[arg_index + 2]
@@ -179,7 +187,7 @@ class fuzzylookup(StreamingCommand):
 		logger.debug("lookupfield: " + self.lookupfield)
 		logger.debug("searchfield: " + self.searchfield)
 		logger.debug("output_overwrite: " + str(self.output_overwrite))
-		logger.debug("output_fields: " + str(self.output_fields))
+		#logger.debug("output_fields: " + str(self.output_fields))
 		logger.debug("output_aliases: " + str(self.output_aliases))
 
 
@@ -239,8 +247,8 @@ class fuzzylookup(StreamingCommand):
 		try:
 			self.service = client.connect(token=self.session_key)
 			logger.info('Successfully connected to %s', str(self.splunkd_uri))
-		except:
-			logger.error('Error connecting: %s' + str(e))
+		except BaseException as e:
+			logger.error('Error connecting: %s', repr(e))
 		# bind incoming search results for reading and extraction of search field
 		# execute lookup command and bind results
 		logger.info('Attempting to cache lookup of %s', self.lookup)
@@ -480,25 +488,35 @@ class fuzzylookup(StreamingCommand):
 
 				# Output the fuzzy metrics
 				event[self.prefix + "fuzzy_score"] = best_score
-				event[self.prefix + "fuzzy_match"] = best_match_string
 				event[self.prefix + "fuzzy_charmatch"] = best_charmatch
 				#event[self.prefix + "fuzzy_sequencelen"] = best_sequencelen
 				event[self.prefix + "fuzzy_similarity"] = fuzzy_metric + charmatch_metric # + sequencelen_metric
 
 				# Convert to a list (if not already a list) to simplify the next section
-				if not isinstance(best_match_lookup_record, list):
+				if isinstance(best_match_lookup_record, list):
+					pass
+					# Get the one with the best consecutive character sequence
+					#new_results = []
+					#for record in best_match_lookup_record:
+				else:
 					best_match_lookup_record = [best_match_lookup_record]
+			
+				event[self.prefix + "fuzzy_match"] = best_match_string
 				
-					# Output the fields from the lookup entry/entries
-					if len(self.output_aliases) > 0:
-						# Only write selected entries to the event. Aliases and field names are identical if no alias specified.
-						for lookup_field, lookup_field_alias in list(self.output_aliases.items()):
-							if (self.output_overwrite or event[lookup_field] is None) and lookup_record[lookup_field] is not None:
-								# Loop through the "best matches" lookup entries
-								lookup_field_entries = []
-								for lookup_record in best_match_lookup_record:
-									lookup_field_entries.append(lookup_record[lookup_field])
-								event[self.prefix + lookup_field_alias] = lookup_field_entries
+				# Output the fields from the lookup entry/entries
+				if len(self.output_aliases) > 0:
+					logger.debug('output_aliases length: ' + str(len(self.output_aliases)))
+					# Only write selected entries to the event. Aliases and field names are identical if no alias specified.
+					for lookup_field, lookup_field_alias in list(self.output_aliases.items()):
+						logger.debug(self.output_overwrite)
+						#logger.debug(event[lookup_field])
+						logger.debug(lookup_record[lookup_field])
+						if (self.output_overwrite or event[lookup_field] is None) and lookup_record[lookup_field] is not None:
+							# Loop through the "best matches" lookup entries
+							lookup_field_entries = []
+							for lookup_record in best_match_lookup_record:
+								lookup_field_entries.append(lookup_record[lookup_field])
+							event[self.prefix + lookup_field_alias] = lookup_field_entries
 
 			# Cache the dynamic lookup list entries in case another event needs the same list
 			# This dramatically speeds up processing for dynamic filters that match a large part of the lookup
