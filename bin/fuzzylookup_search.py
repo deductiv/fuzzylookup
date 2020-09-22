@@ -7,7 +7,7 @@
 # 
 # Author: J.R. Murray <jr.murray@deductiv.net>
 # 
-# Version: 1.0.0 (2020-09-11)
+# Version: 1.0.1 (2020-09-22)
 
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -86,6 +86,13 @@ class fuzzylookup(StreamingCommand):
 		**Description:** Text to prefix all output field names with. Helpful if you just want every lookup field without aliasing each one.''',
 		require=False) 
 
+	addmetrics = Option(
+		doc='''
+		**Syntax:** **addmetrics=***[True|False]
+		**Description:** Add fuzzy match metrics to each result (score, matching characters, similarity score, consecutive match length)
+		**Default:** False''',
+		require=False, validate=validators.Boolean())
+	
 	lookupfilter = Option(
 		doc='''
 		**Syntax:** **lookupfilter=***"LookupField1=\"local admin\" Lookupfield2=\"*@$email_domain$\""* (wildcard, variable, or literal string match)
@@ -114,7 +121,6 @@ class fuzzylookup(StreamingCommand):
 	lookup = ''
 	lookupfield = ''
 	searchfield = ''
-	#output_fields = []
 	output_aliases = OrderedDict()
 	# Default output field overwrite setting is True
 	output_overwrite = True
@@ -163,7 +169,6 @@ class fuzzylookup(StreamingCommand):
 					else:
 						# Add field to output fields list
 						output_field_name = args[arg_index].strip(',')
-						#self.output_fields.append(output_field_name)
 						if len(args) >= arg_index + 2:
 							if args[arg_index + 1].upper() == 'AS':
 								self.output_aliases[output_field_name] = args[arg_index + 2]
@@ -187,14 +192,15 @@ class fuzzylookup(StreamingCommand):
 		logger.debug("lookupfield: " + self.lookupfield)
 		logger.debug("searchfield: " + self.searchfield)
 		logger.debug("output_overwrite: " + str(self.output_overwrite))
-		#logger.debug("output_fields: " + str(self.output_fields))
 		logger.debug("output_aliases: " + str(self.output_aliases))
 
 
-		logger.debug(self.prefix)
 		if self.prefix is None:
 			self.prefix = ''
-		logger.debug("Prefix is " + self.prefix)
+		if self.addmetrics is None:
+			self.addmetrics = False
+		logger.debug("prefix = %s", self.prefix)
+		logger.debug("addmetrics = %s", self.addmetrics)
 
 		#log beginning of comparison
 		logger.info('Comparing %s to %s in %s lookup for fuzzy matches', self.searchfield, self.lookupfield, self.lookup)
@@ -319,16 +325,13 @@ class fuzzylookup(StreamingCommand):
 		if event_field_value is None or len(event_field_value) == 0:
 			return event
 
-		logger.debug('Calculating distances for %s', event_field_value)
-		#logger.debug(event)
 		# Iterate through lookupfield results and calculate get_distances
+		logger.debug('Calculating distances for %s', event_field_value)
 		best_match_string = None
 		active_score = 100
 		active_charmatch = 0
 		best_score = 100
 		best_charmatch = 0
-		#best_sequencelen = 0
-		#active_sequencelen = 0
 		dynamic_matches = 0
 		dynamic_match_list = []
 		dynamic_filters = {}
@@ -447,29 +450,19 @@ class fuzzylookup(StreamingCommand):
 					#logger.debug("Comparing %s to %s", sf_compare, lf_compare)
 					active_score = jf.levenshtein_distance(sf_compare, lf_compare)
 					active_charmatch = matching_chars(sf_compare, lf_compare)
-					#active_sequencelen = overlap_length(sf_compare, lf_compare)
 
-					#logger.debug("Compared %s to %s to get result=%s/%s (score/overlap)", sf_compare, lf_compare, str(active_score), str(active_charmatch))
 					# Get the result with the greatest 1:1 character overlap if the scores are identical
-					#if active_score < best_score or (active_score == best_score and (active_charmatch > best_charmatch or active_sequencelen > best_sequencelen)):
 					if active_score < best_score or (active_score == best_score and active_charmatch > best_charmatch):
-						#logger.debug("New best score: %s/%s  result=%s/%s (score/overlap).  Was %s/%s/%s. Count=%s", sf_compare, lf_compare, str(active_score), str(active_charmatch), str(best_match_string), str(best_score), str(best_charmatch), str(comparison_count))
-						best_match_string = lookup_value
-						best_match_lookup_record = lookup_record
-						best_score =  active_score
+						# New best score
+						best_match_string = [lookup_value]
+						best_match_lookup_record = [lookup_record]
+						best_score = active_score
 						best_charmatch = active_charmatch
-						#best_sequencelen = active_sequencelen
 						best_lf_compare = lf_compare
 					elif active_score == best_score and active_charmatch == best_charmatch:
-						if type(best_match_string) is list:
-							best_match_string.append(lookup_value)
-							best_match_lookup_record.append(lookup_record)
-						else:
-							best_match_string = [best_match_string, lookup_value]
-							best_match_lookup_record = [best_match_lookup_record, lookup_record]
-					#elif lf_compare == 'kevman*' or lf_compare == 'knmew**':
-					#	logger.debug("DEBUGGING: %s/%s  result=%s/%s (score/overlap).  Best=%s/%s/%s. Count=%s", sf_compare, lf_compare, str(active_score), str(active_charmatch), str(best_match_string), str(best_score), str(best_charmatch), str(comparison_count))
-
+						# Same best score, different entry. Append to the list.
+						best_match_string.append(lookup_value)
+						best_match_lookup_record.append(lookup_record)
 				except TypeError as e:
 					logger.error("Type Error: " + repr(e))
 					raise Exception
@@ -486,31 +479,48 @@ class fuzzylookup(StreamingCommand):
 				charmatch_metric = round((float(best_charmatch) / max_length) * charmatch_weight, 2)
 				#sequencelen_metric = round((1-(float(best_sequencelen) / max_length)) * sequencelen_weight, 2)
 
-				# Output the fuzzy metrics
-				event[self.prefix + "fuzzy_score"] = best_score
-				event[self.prefix + "fuzzy_charmatch"] = best_charmatch
-				#event[self.prefix + "fuzzy_sequencelen"] = best_sequencelen
-				event[self.prefix + "fuzzy_similarity"] = fuzzy_metric + charmatch_metric # + sequencelen_metric
 
-				# Convert to a list (if not already a list) to simplify the next section
-				if isinstance(best_match_lookup_record, list):
-					pass
-					# Get the one with the best consecutive character sequence
-					#new_results = []
-					#for record in best_match_lookup_record:
-				else:
-					best_match_lookup_record = [best_match_lookup_record]
-			
-				event[self.prefix + "fuzzy_match"] = best_match_string
+				# Check for the best consecutive character length match in the resulting list
+				# This is done in a second step to limit the number of sequence length computations
+				if len(best_match_lookup_record) > 1:
+					best_sequencelen = 0
+					best_sequence_lookup_record = []
+					for lookup_record in best_match_lookup_record:
+						lf_compare = lookup_record[self.lookupfield].lower()
+						# Apply the deletions and masking prior to comparisons being made (again)
+						if self.delete is not None:
+							lf_compare = re.sub(self.delete, '', lf_compare)
+						if self.mask is not None:
+							lf_compare = re.sub(self.mask, '*', lf_compare)
+						
+						# Calculate the length of consecutive character matches
+						active_sequencelen = overlap_length(sf_compare, lf_compare)
+
+						if active_sequencelen > best_sequencelen:
+							# New best score
+							best_sequencelen = active_sequencelen
+							best_sequence_lookup_record = [lookup_record]
+							
+						elif active_sequencelen == best_sequencelen:
+							# Best score tie
+							best_sequence_lookup_record.append(lookup_record)
+					best_match_lookup_record = best_sequence_lookup_record
+				
+				if self.addmetrics:
+					# Output the fuzzy metrics
+					event[self.prefix + "fuzzy_matchlen"] = best_sequencelen
+					event[self.prefix + "fuzzy_score"] = best_score
+					event[self.prefix + "fuzzy_charmatch"] = best_charmatch
+					event[self.prefix + "fuzzy_similarity"] = fuzzy_metric + charmatch_metric # + sequencelen_metric
 				
 				# Output the fields from the lookup entry/entries
 				if len(self.output_aliases) > 0:
 					logger.debug('output_aliases length: ' + str(len(self.output_aliases)))
 					# Only write selected entries to the event. Aliases and field names are identical if no alias specified.
 					for lookup_field, lookup_field_alias in list(self.output_aliases.items()):
-						logger.debug(self.output_overwrite)
+						#logger.debug(self.output_overwrite)
 						#logger.debug(event[lookup_field])
-						logger.debug(lookup_record[lookup_field])
+						#logger.debug(lookup_record[lookup_field])
 						if (self.output_overwrite or event[lookup_field] is None) and lookup_record[lookup_field] is not None:
 							# Loop through the "best matches" lookup entries
 							lookup_field_entries = []

@@ -13,6 +13,7 @@ This app allows you to apply fuzzy logic to lookups from your search result fiel
 ### Syntax:  
 	search | fuzzylookup 
 		[ prefix=<string> ]
+		[ addmetrics=[True|False] ]
 		[ lookupfilter=<kvpairs> ]
 		[ mask=<regex> ]
 		[ delete=<regex> ]
@@ -43,6 +44,10 @@ Cross-reference your search fields against lookup data for non-exact matches, wi
 - #### Prefix  
 	**Syntax:** prefix=&lt;prefix_text&gt;  
 	**Description:** Text to prefix all output field names with. Helpful for applying to every lookup field without aliasing each one.  
+- #### Add Metrics  
+	**Syntax:** addmetrics=[True|False]  
+	**Description:** Add fuzzy match metrics to each result (score, matching characters, similarity score, consecutive match length).  
+	**Default:** False
 - #### Lookup Filter  
 	**Syntax:** lookupfilter="&lt;lookup_field&gt;=\\"lookup_value\\&quot; &lt;lookup_field&gt;=\\"$event_field$\\""  
 	**Description:** Filter for data in the specified lookup to reduce the number of comparisons  
