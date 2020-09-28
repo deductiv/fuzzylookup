@@ -1,4 +1,4 @@
-# Fuzzylookup - Splunk App by Deductiv  
+# ![App icon](static/appIcon.png) Fuzzylookup - Splunk App by [Deductiv](https://www.deductiv.net/)  
 
 This app allows you to apply fuzzy logic to lookups from your search result fields for near-matches.  Use cases include:  
 
@@ -66,3 +66,7 @@ Having trouble with the app? Feel free to [email us](mailto:contact@deductiv.net
 # Features  
 
 We love hearing your feedback and ideas for our apps.  Please [email](mailto:contact@deductiv.net) your suggestions!  
+
+# Blogs  
+
+Check out our blog article on the topic: [Gettin' Fuzzy With It](https://www.deductiv.net/blog/gettin-fuzzy-with-it).  

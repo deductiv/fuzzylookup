@@ -7,7 +7,7 @@
 # 
 # Author: J.R. Murray <jr.murray@deductiv.net>
 # 
-# Version: 1.0.1 (2020-09-22)
+# Version: 1.0.2 (2020-09-28)
 
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -24,7 +24,7 @@ import json
 import time
 import fnmatch
 import difflib
-from deductiv_helpers import *
+from deductiv_helpers import * 		# pylint: disable=unused-wildcard-import
 
 # Multithreading
 import multiprocessing as mp
@@ -35,6 +35,7 @@ import threading
 # Add lib folders to import path
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib'))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
+# pylint: disable=import-error
 
 # Jellyfish
 import jellyfish as jf
@@ -59,7 +60,7 @@ def overlap_length(string1, string2):
 	sm = difflib.SequenceMatcher(a=string1, b=string2)
 	try:
 		return sm.find_longest_match(0, len(string1), 0, len(string2) ).size
-	except BaseException as e:
+	except BaseException:
 		return -1
 
 # Define class and type for Splunk command
@@ -212,7 +213,7 @@ class fuzzylookup(StreamingCommand):
 			# Split the filter into multiple key/value filters
 			# Break the data into multiple fields, if needed
 			# Replace the space delimiter with |, then split by | 
-			filter_list = re.sub(r'\s+(\w+=)', '|\g<1>', self.lookupfilter).split('|')
+			filter_list = re.sub(r'\s+(\w+=)', '|\g<1>', self.lookupfilter).split('|')    # pylint: disable=anomalous-backslash-in-string
 			for f in filter_list:
 				logger.debug("filter = " + f)
 				filter_re = re.compile(r'^(.*?)([<>=]+)(.*)$')
@@ -387,8 +388,8 @@ class fuzzylookup(StreamingCommand):
 				comparison_list = self.lookup_list
 				dynamic_filters_key = None
 
+			# Find the shortest distance metric
 			comparison_count = 0
-			#logger.info('Finding shortest distance')
 			for lookup_record in comparison_list:
 				comparison_count += 1
 
