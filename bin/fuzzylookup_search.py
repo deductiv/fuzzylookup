@@ -483,30 +483,30 @@ class fuzzylookup(StreamingCommand):
 
 				# Check for the best consecutive character length match in the resulting list
 				# This is done in a second step to limit the number of sequence length computations
-				if len(best_match_lookup_record) > 1:
-					best_sequencelen = 0
-					best_sequence_lookup_record = []
-					for lookup_record in best_match_lookup_record:
-						lf_compare = lookup_record[self.lookupfield].lower()
-						# Apply the deletions and masking prior to comparisons being made (again)
-						if self.delete is not None:
-							lf_compare = re.sub(self.delete, '', lf_compare)
-						if self.mask is not None:
-							lf_compare = re.sub(self.mask, '*', lf_compare)
-						
-						# Calculate the length of consecutive character matches
-						active_sequencelen = overlap_length(sf_compare, lf_compare)
+				#if len(best_match_lookup_record) > 1:
+				best_sequencelen = 0
+				best_sequence_lookup_record = []
+				for lookup_record in best_match_lookup_record:
+					lf_compare = lookup_record[self.lookupfield].lower()
+					# Apply the deletions and masking prior to comparisons being made (again)
+					if self.delete is not None:
+						lf_compare = re.sub(self.delete, '', lf_compare)
+					if self.mask is not None:
+						lf_compare = re.sub(self.mask, '*', lf_compare)
+					
+					# Calculate the length of consecutive character matches
+					active_sequencelen = overlap_length(sf_compare, lf_compare)
 
-						if active_sequencelen > best_sequencelen:
-							# New best score
-							best_sequencelen = active_sequencelen
-							best_sequence_lookup_record = [lookup_record]
-							
-						elif active_sequencelen == best_sequencelen:
-							# Best score tie
-							best_sequence_lookup_record.append(lookup_record)
-					best_match_lookup_record = best_sequence_lookup_record
-				
+					if active_sequencelen > best_sequencelen:
+						# New best score
+						best_sequencelen = active_sequencelen
+						best_sequence_lookup_record = [lookup_record]
+						
+					elif active_sequencelen == best_sequencelen:
+						# Best score tie
+						best_sequence_lookup_record.append(lookup_record)
+				best_match_lookup_record = best_sequence_lookup_record
+
 				if self.addmetrics:
 					# Output the fuzzy metrics
 					event[self.prefix + "fuzzy_matchlen"] = best_sequencelen
@@ -522,7 +522,7 @@ class fuzzylookup(StreamingCommand):
 						#logger.debug(self.output_overwrite)
 						#logger.debug(event[lookup_field])
 						#logger.debug(lookup_record[lookup_field])
-						if (self.output_overwrite or event[lookup_field] is None) and lookup_record[lookup_field] is not None:
+						if (self.output_overwrite or lookup_field not in list(event.keys())) and lookup_field in list(lookup_record.keys()):
 							# Loop through the "best matches" lookup entries
 							lookup_field_entries = []
 							for lookup_record in best_match_lookup_record:
