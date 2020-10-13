@@ -7,7 +7,7 @@
 # 
 # Author: J.R. Murray <jr.murray@deductiv.net>
 # 
-# Version: 1.0.2 (2020-09-28)
+# Version: 1.0.3 (2020-10-12)
 
 from __future__ import unicode_literals
 from __future__ import print_function
