@@ -7,7 +7,7 @@
 # 
 # Author: J.R. Murray <jr.murray@deductiv.net>
 # 
-# Version: 1.0.3 (2020-10-12)
+# Version: 1.0.4 (2021-06-16)
 
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -66,6 +66,7 @@ def overlap_length(string1, string2):
 # Define class and type for Splunk command
 @Configuration(local=True)
 class fuzzylookup(StreamingCommand):
+
 	doc='''
 	**Syntax:**
 	| fuzzylookup 
@@ -128,9 +129,11 @@ class fuzzylookup(StreamingCommand):
 
 	# Store the data from the lookup for each dynamic filter
 	# Use a manager as a proxy to allow for cross-process communication
-	manager = Manager()
-	prepopulated_filter_lookupdata = manager.dict()
-	l = manager.list()
+	
+	if __name__ == '__main__':
+		manager = Manager()
+		prepopulated_filter_lookupdata = manager.dict()
+		l = manager.list()
 
 	# Define main function
 	def stream(self, events):
@@ -296,17 +299,18 @@ class fuzzylookup(StreamingCommand):
 		pool = ThreadPool(5)
 
 		try:
-			count = 0
-			if len(self.lookup_list) > 0:
-				logger.debug("Running ThreadPool")
-				results = pool.map(self.get_distances, events)
-				for result in results:
-					yield result
-					count += 1
-			else:
-				for event in events:
-					yield event
-					count += 1
+			if __name__ == '__main__':
+				count = 0
+				if len(self.lookup_list) > 0:
+					logger.debug("Running ThreadPool")
+					results = pool.map(self.get_distances, events)
+					for result in results:
+						yield result
+						count += 1
+				else:
+					for event in events:
+						yield event
+						count += 1
 
 		except BaseException as e:
 			logger.error("Error: %s" % repr(e))
