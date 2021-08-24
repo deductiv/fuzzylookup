@@ -313,7 +313,7 @@ class fuzzylookup(StreamingCommand):
 						count += 1
 
 		except BaseException as e:
-			logger.error("Error: %s" % repr(e))
+			logger.exception("Error: %s" % repr(e))
 			results = {}
 
 		duration_secs = round(time.time()-start_time)
@@ -326,9 +326,11 @@ class fuzzylookup(StreamingCommand):
 		
 		# sf = search field / field from search results
 		# Convert to Unicode (py3 compatible)
-		event_field_value = str(event[self.searchfield].lower())
-		if event_field_value is None or len(event_field_value) == 0:
+		if self.searchfield not in list(event.keys()) or len(event[self.searchfield]) == 0:
 			return event
+		else:
+			event_field_value = str(event[self.searchfield].lower())
+
 
 		# Iterate through lookupfield results and calculate get_distances
 		logger.debug('Calculating distances for %s', event_field_value)
@@ -438,7 +440,12 @@ class fuzzylookup(StreamingCommand):
 						self.output_aliases[lookup_field] = lookup_field
 
 				# Get the lookup field value
-				lookup_value = lookup_record[self.lookupfield]
+				try:
+					lookup_value = lookup_record[self.lookupfield]
+				except BaseException as e:
+					logger.error("Lookup does not contain the referenced field: %s" % self.lookupfield)
+
+
 
 				# Convert to Unicode (Python 3 compatible version)
 				sf_compare = str(event_field_value.lower())
