@@ -17,7 +17,7 @@ standard_library.install_aliases()
 from builtins import str
 
 import sys, os, traceback
-from collections import OrderedDict 
+from collections import OrderedDict
 import urllib.parse
 import re
 import json
@@ -30,7 +30,7 @@ from deductiv_helpers import * 		# pylint: disable=unused-wildcard-import
 import multiprocessing as mp
 from multiprocessing import Pool, Manager #, set_start_method, get_context -- py3 only
 from multiprocessing.dummy import Pool as ThreadPool
-import threading
+#import threading
 
 # Add lib folders to import path
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib'))
@@ -42,10 +42,12 @@ import jellyfish as jf
 
 # Splunk
 import splunklib.client as client
-import splunklib.results as results
+#import splunklib.results as results
 from splunklib.searchcommands import StreamingCommand, dispatch, Configuration, Option, validators
 
-logger = setup_logging('fuzzylookup')
+log_level = 'INFO'
+
+logger = setup_logger(log_level, 'fuzzylookup')
 
 def matching_chars(string1, string2):
 	# Find the number of characters between two strings that overlap
@@ -137,7 +139,7 @@ class fuzzylookup(StreamingCommand):
 
 	# Define main function
 	def stream(self, events):
-		logger = setup_logging('fuzzylookup')
+		logger = setup_logger(log_level, 'fuzzylookup')
 
 		args = [val for val in self._metadata.searchinfo.args[2:] if '=' not in val]
 
@@ -321,7 +323,7 @@ class fuzzylookup(StreamingCommand):
 
 	# Run this thread once for each event
 	def get_distances(self, event):
-		logger = setup_logging('fuzzylookup')
+		logger = setup_logger(log_level, 'fuzzylookup')
 		start_time = time.time()
 		
 		# sf = search field / field from search results
