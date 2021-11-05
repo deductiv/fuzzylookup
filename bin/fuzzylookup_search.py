@@ -46,8 +46,9 @@ import splunklib.client as client
 from splunklib.searchcommands import StreamingCommand, dispatch, Configuration, Option, validators
 
 log_level = 'INFO'
+log_file = 'fuzzylookup.log'
 
-logger = setup_logger(log_level, 'fuzzylookup')
+logger = setup_logger(log_level, log_file)
 
 def matching_chars(string1, string2):
 	# Find the number of characters between two strings that overlap
@@ -139,7 +140,7 @@ class fuzzylookup(StreamingCommand):
 
 	# Define main function
 	def stream(self, events):
-		logger = setup_logger(log_level, 'fuzzylookup')
+		logger = setup_logger(log_level, log_file)
 
 		args = [val for val in self._metadata.searchinfo.args[2:] if '=' not in val]
 
@@ -323,7 +324,7 @@ class fuzzylookup(StreamingCommand):
 
 	# Run this thread once for each event
 	def get_distances(self, event):
-		logger = setup_logger(log_level, 'fuzzylookup')
+		logger = setup_logger(log_level, log_file)
 		start_time = time.time()
 		
 		# sf = search field / field from search results

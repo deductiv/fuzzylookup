@@ -60,7 +60,7 @@ def setup_logging(logger_name):
 def setup_logger(level, filename):
 	logger = logging.getLogger(filename)
 	# Prevent the log messages from being duplicated in the python.log file
-	logger.propagate = False 
+	logger.propagate = False
 	logger.setLevel(level)
 	
 	log_file = os.path.join( os.environ['SPLUNK_HOME'], 'var', 'log', 'splunk', filename )
@@ -68,7 +68,8 @@ def setup_logger(level, filename):
 	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 	file_handler.setFormatter(formatter)
 	
-	logger.addHandler(file_handler)
+	if not len(logger.handlers):
+		logger.addHandler(file_handler)
 	
 	return logger
 
